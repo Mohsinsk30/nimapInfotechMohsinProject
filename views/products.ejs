@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Master</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+  <div class="container py-5">
+    <h1 class="text-center mb-4">Product Master</h1>
+
+    <!-- Top-Up Button -->
+    <div class="text-end mb-3">
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
+        Add New Product
+      </button>
+    </div>
+
+    <!-- Product Table -->
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Products</h5>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover table-bordered mb-0">
+          <thead class="table-dark">
+            <tr>
+              <th scope="col">Product ID</th>
+              <th scope="col">Product Name</th>
+              <th scope="col">Category Name</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% products.forEach(product => { %>
+            <tr>
+              <td><%= product.ProductId %></td>
+              <td><%= product.ProductName %></td>
+              <td><%= product.CategoryName %></td>
+              <td>
+                <div class="d-flex gap-2">
+                  <!-- Update Button -->
+                  <button 
+                    type="button" 
+                    class="btn btn-warning btn-sm"
+                    data-bs-toggle="modal" 
+                    data-bs-target="#updateProductModal" 
+                    data-product-id="<%= product.ProductId %>" 
+                    data-product-name="<%= product.ProductName %>" 
+                    data-category-id="<%= product.CategoryId %>">
+                    Update
+                  </button>
+
+                  <!-- Delete Form -->
+                  <form action="/products/delete/<%= product.ProductId %>" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <nav class="mt-4">
+      <ul class="pagination justify-content-center">
+        <% for(let i = 1; i <= totalPages; i++) { %>
+        <li class="page-item <%= i === page ? 'active' : '' %>">
+          <a class="page-link" href="/products?page=<%= i %>"><%= i %></a>
+        </li>
+        <% } %>
+      </ul>
+    </nav>
+  </div>
+
+  <!-- Add Product Modal -->
+  <div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="addProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form action="/products/add" method="POST">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addProductModalLabel">Add New Product</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="ProductName" class="form-label">Product Name</label>
+              <input type="text" name="ProductName" id="ProductName" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label for="CategoryId" class="form-label">Category</label>
+              <select name="CategoryId" id="CategoryId" class="form-select" required>
+                <option value="" disabled selected>Select Category</option>
+                <% categories.forEach(category => { %>
+                <option value="<%= category.CategoryId %>"><%= category.CategoryName %></option>
+                <% }) %>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Update Product Modal -->
+  <div class="modal fade" id="updateProductModal" tabindex="-1" aria-labelledby="updateProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form action="/products/update" method="POST">
+          <div class="modal-header">
+            <h5 class="modal-title" id="updateProductModalLabel">Update Product</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" name="ProductId" id="updateProductId">
+            <div class="mb-3">
+              <label for="updateProductName" class="form-label">Product Name</label>
+              <input type="text" name="ProductName" id="updateProductName" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label for="updateCategoryId" class="form-label">Category</label>
+              <select name="CategoryId" id="updateCategoryId" class="form-select" required>
+                <% categories.forEach(category => { %>
+                <option value="<%= category.CategoryId %>"><%= category.CategoryName %></option>
+                <% }) %>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Update</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Populate the update modal with existing product data
+    const updateProductModal = document.getElementById('updateProductModal');
+    updateProductModal.addEventListener('show.bs.modal', function (event) {
+      const button = event.relatedTarget;
+      const productId = button.getAttribute('data-product-id');
+      const productName = button.getAttribute('data-product-name');
+      const categoryId = button.getAttribute('data-category-id');
+
+      const modalTitle = updateProductModal.querySelector('.modal-title');
+      const modalProductId = updateProductModal.querySelector('#updateProductId');
+      const modalProductName = updateProductModal.querySelector('#updateProductName');
+      const modalCategoryId = updateProductModal.querySelector('#updateCategoryId');
+
+      modalProductId.value = productId;
+      modalProductName.value = productName;
+      modalCategoryId.value = categoryId;
+    });
+  </script>
+</body>
+</html>
