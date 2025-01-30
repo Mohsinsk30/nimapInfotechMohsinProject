@@ -30,6 +30,8 @@
               <th scope="col">Product ID</th>
               <th scope="col">Product Name</th>
               <th scope="col">Category Name</th>
+              <th scope="col">Price</th>
+              <th scope="col">Quantity</th>
               <th scope="col">Actions</th>
             </tr>
           </thead>
@@ -39,6 +41,8 @@
               <td><%= product.ProductId %></td>
               <td><%= product.ProductName %></td>
               <td><%= product.CategoryName %></td>
+              <td><%= product.Price %></td>
+              <td><%= product.Quantity %></td>
               <td>
                 <div class="d-flex gap-2">
                   <!-- Update Button -->
@@ -49,7 +53,9 @@
                     data-bs-target="#updateProductModal" 
                     data-product-id="<%= product.ProductId %>" 
                     data-product-name="<%= product.ProductName %>" 
-                    data-category-id="<%= product.CategoryId %>">
+                    data-category-id="<%= product.CategoryId %>"
+                    data-price="<%= product.Price %>"
+                    data-quantity="<%= product.Quantity %>">
                     Update
                   </button>
 
@@ -101,6 +107,14 @@
                 <% }) %>
               </select>
             </div>
+            <div class="mb-3">
+              <label for="Price" class="form-label">Price</label>
+              <input type="number" name="Price" id="Price" class="form-control" step="0.01" required>
+            </div>
+            <div class="mb-3">
+              <label for="Quantity" class="form-label">Quantity</label>
+              <input type="number" name="Quantity" id="Quantity" class="form-control" required>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="submit" class="btn btn-primary">Save</button>
@@ -133,6 +147,14 @@
                 <% }) %>
               </select>
             </div>
+            <div class="mb-3">
+              <label for="updatePrice" class="form-label">Price</label>
+              <input type="number" name="Price" id="updatePrice" class="form-control" step="0.01" required>
+            </div>
+            <div class="mb-3">
+              <label for="updateQuantity" class="form-label">Quantity</label>
+              <input type="number" name="Quantity" id="updateQuantity" class="form-control" required>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="submit" class="btn btn-primary">Update</button>
@@ -151,15 +173,21 @@
       const productId = button.getAttribute('data-product-id');
       const productName = button.getAttribute('data-product-name');
       const categoryId = button.getAttribute('data-category-id');
+      const price = button.getAttribute('data-price');
+      const quantity = button.getAttribute('data-quantity');
 
       const modalTitle = updateProductModal.querySelector('.modal-title');
       const modalProductId = updateProductModal.querySelector('#updateProductId');
       const modalProductName = updateProductModal.querySelector('#updateProductName');
       const modalCategoryId = updateProductModal.querySelector('#updateCategoryId');
+      const modalPrice = updateProductModal.querySelector('#updatePrice');
+      const modalQuantity = updateProductModal.querySelector('#updateQuantity');
 
       modalProductId.value = productId;
       modalProductName.value = productName;
       modalCategoryId.value = categoryId;
+      modalPrice.value = price;
+      modalQuantity.value = quantity;
     });
   </script>
 </body>
