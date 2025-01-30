@@ -1,107 +1,92 @@
 const db = require('../config/db');
-const { validationResult } = require('express-validator');
-const { runQuery } = require('../config/db')
+const { runQuery } = require("../config/db");
 
-
-
-exports.getProducts = async (req, res) => {
+// Get all categories
+exports.getCategory = async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const pageSize = 10;
-        const offset = (page - 1) * pageSize;
+        // Query to fetch all categories from the database
+        const getCategoryQuery = `SELECT * FROM categories`;
+        const getCategoryQueryRes = await runQuery(getCategoryQuery);
 
-        // Fetch products and categories
-        const productsQuery = `
-            SELECT p.ProductId, p.ProductName, p.CategoryId, c.CategoryName
-            FROM Products p
-            JOIN Categories c ON p.CategoryId = c.CategoryId
-            ORDER BY p.ProductId ASC
-            LIMIT ${offset}, ${pageSize}
-        `;
-        const products = await runQuery(productsQuery);
-
-        const categoriesQuery = 'SELECT * FROM Categories';
-        const categories = await runQuery(categoriesQuery);
-
-        const countQuery = 'SELECT COUNT(*) AS total FROM Products';
-        const count = await runQuery(countQuery);
-
-        const totalPages = Math.ceil(count[0].total / pageSize);
-        res.render('products', { products, categories, page, totalPages });
+        // Check if categories are found
+        if (getCategoryQueryRes.length > 0) {
+            // Render the 'categories' page with the fetched categories
+            res.render('categories', { categories: getCategoryQueryRes });
+        } else {
+            res.status(404).json({ message: "No categories found" });
+        }
     } catch (err) {
-        res.status(500).send("Failed to fetch products");
+        res.status(500).json({ error: err.message });
     }
 };
 
-// Add a new product
-exports.addProduct = async (req, res) => {
+// Add a new category
+exports.insertCategory = async (req, res) => {
     try {
-        const { ProductName, CategoryId } = req.body;
+        const { CategoryName } = req.body; // Extract category name from the request body
 
-        if (!ProductName || !CategoryId) {
-            return res.status(400).send("ProductName and CategoryId are required");
+        // Validate if CategoryName is provided
+        if (!CategoryName) {
+            return res.status(400).json({ message: "CategoryName is required" });
         }
 
-        const addProductQuery = `
-            INSERT INTO Products (ProductName, CategoryId)
-            VALUES ('${ProductName}', ${CategoryId});
-        `;
-        const result = await runQuery(addProductQuery);
+        // Query to insert a new category into the database
+        const insertCategoryQuery = `INSERT INTO categories (CategoryName) VALUES ('${CategoryName}')`;
+        const insertCategoryQueryRes = await runQuery(insertCategoryQuery);
 
-        if (result.affectedRows > 0) {
-            res.redirect('/products');  // Successful addition
+        // Check if the insertion was successful
+        if (insertCategoryQueryRes.affectedRows > 0) {
+            res.redirect('/categories'); // Redirect to the categories list
         } else {
-            res.status(500).send("Failed to add the product");  // If no rows were inserted
+            res.status(500).json({ message: "Failed to add category" });
         }
     } catch (err) {
-        res.status(500).send("An error occurred while adding the product");
+        res.status(500).json({ error: err.message });
     }
 };
 
-
-// Update a product
-exports.updateProduct = async (req, res) => {
+// Update an existing category
+exports.updateCategory = async (req, res) => {
     try {
-        const { ProductId, ProductName, CategoryId } = req.body;
+        const { categoryName, categoryId } = req.body; // Extract category details from the request body
+        console.log(categoryId, categoryName);
 
-        if (!ProductId || !ProductName || !CategoryId) {
-            return res.status(400).send("ProductId, ProductName, and CategoryId are required");
-        }
+        // Query to update the category name in the database
+        const updateCategoryQuery = `UPDATE categories SET CategoryName = '${categoryName}' WHERE CategoryId = ${categoryId}`;
+        const updateCategoryQueryRes = await runQuery(updateCategoryQuery);
 
-        const updateProductQuery = `
-            UPDATE Products SET ProductName = '${ProductName}', CategoryId = ${CategoryId}
-            WHERE ProductId = ${ProductId};
-        `;
-        const result = await runQuery(updateProductQuery);
-
-        if (result.affectedRows > 0) {
-            res.redirect('/products');  // Successful update
+        // Check if the update was successful
+        if (updateCategoryQueryRes.affectedRows > 0) {
+            res.redirect('/categories'); // Redirect to the categories list
         } else {
-            res.status(404).send("Product not found");  // If no rows were affected
+            res.status(404).json({ message: "Category not found or not updated" });
         }
-    } catch (err) {
-        res.status(500).send("An error occurred while updating the product");
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 };
 
-// Delete a product
-exports.deleteProduct = async (req, res) => {
+// Delete a category
+exports.deleteCategory = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { categoryId } = req.params; // Extract the category ID from the request parameters
 
-        if (!id) {
-            return res.status(400).send("ProductId is required");
+        // Validate if categoryId is provided
+        if (!categoryId) {
+            return res.status(400).json({ message: "Category ID is required" });
         }
 
-        const deleteProductQuery = `DELETE FROM Products WHERE ProductId = ${id}`;
-        const result = await runQuery(deleteProductQuery);
+        // Query to delete the category from the database
+        const deleteCategoryQuery = `DELETE FROM categories WHERE CategoryId = ${categoryId}`;
+        const deleteCategoryQueryRes = await runQuery(deleteCategoryQuery);
 
-        if (result.affectedRows > 0) {
-            res.redirect('/products');  // Successful deletion
+        // Check if the deletion was successful
+        if (deleteCategoryQueryRes.affectedRows > 0) {
+            res.redirect('/categories'); // Redirect to the categories list
         } else {
-            res.status(404).send("Product not found");  // If no rows were affected
+            res.status(404).json({ message: "Category not found" });
         }
     } catch (err) {
-        res.status(500).send("An error occurred while deleting the product");
+        res.status(500).json({ error: err.message });
     }
 };
