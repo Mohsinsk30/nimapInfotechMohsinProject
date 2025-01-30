@@ -1,92 +1,122 @@
 const db = require('../config/db');
-const { runQuery } = require("../config/db");
+const { runQuery } = require('../config/db');
 
-// Get all categories
-exports.getCategory = async (req, res) => {
+// Function to get products with pagination and category data
+exports.getProducts = async (req, res) => {
     try {
-        // Query to fetch all categories from the database
-        const getCategoryQuery = `SELECT * FROM categories`;
-        const getCategoryQueryRes = await runQuery(getCategoryQuery);
+        const page = parseInt(req.query.page) || 1; // Parse page number
+        const pageSize = 10; // Define items per page
+        const offset = (page - 1) * pageSize; // Calculate offset for pagination
 
-        // Check if categories are found
-        if (getCategoryQueryRes.length > 0) {
-            // Render the 'categories' page with the fetched categories
-            res.render('categories', { categories: getCategoryQueryRes });
-        } else {
-            res.status(404).json({ message: "No categories found" });
-        }
+        // Query to fetch products with their category names, price, and quantity
+        const productsQuery = `
+            SELECT p.ProductId, p.ProductName, p.CategoryId, p.Price, p.Quantity, c.CategoryName
+            FROM Products p
+            JOIN Categories c ON p.CategoryId = c.CategoryId
+            ORDER BY p.ProductId ASC
+            LIMIT ${offset}, ${pageSize}
+        `;
+        const products = await runQuery(productsQuery);
+
+        // Query to fetch all categories
+        const categoriesQuery = 'SELECT * FROM Categories';
+        const categories = await runQuery(categoriesQuery);
+
+        // Query to get total product count
+        const countQuery = 'SELECT COUNT(*) AS total FROM Products';
+        const count = await runQuery(countQuery);
+
+        // Calculate total pages for pagination
+        const totalPages = Math.ceil(count[0].total / pageSize);
+
+        // Render the products page with all data
+        res.render('products', { products, categories, page, totalPages });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).send("Failed to fetch products");
     }
 };
 
-// Add a new category
-exports.insertCategory = async (req, res) => {
+// Function to add a new product
+exports.addProduct = async (req, res) => {
     try {
-        const { CategoryName } = req.body; // Extract category name from the request body
+        const { ProductName, CategoryId, Price, Quantity } = req.body; // Extract product details
 
-        // Validate if CategoryName is provided
-        if (!CategoryName) {
-            return res.status(400).json({ message: "CategoryName is required" });
+        // Validate the presence of required fields
+        if (!ProductName || !CategoryId || !Price || !Quantity) {
+            return res.status(400).send("ProductName, CategoryId, Price, and Quantity are required");
         }
 
-        // Query to insert a new category into the database
-        const insertCategoryQuery = `INSERT INTO categories (CategoryName) VALUES ('${CategoryName}')`;
-        const insertCategoryQueryRes = await runQuery(insertCategoryQuery);
+        // SQL query to insert the new product into the database
+        const addProductQuery = `
+            INSERT INTO Products (ProductName, CategoryId, Price, Quantity)
+            VALUES ('${ProductName}', ${CategoryId}, ${Price}, ${Quantity});
+        `;
+        const result = await runQuery(addProductQuery);
 
-        // Check if the insertion was successful
-        if (insertCategoryQueryRes.affectedRows > 0) {
-            res.redirect('/categories'); // Redirect to the categories list
+        // Redirect to the products page if successful
+        if (result.affectedRows > 0) {
+            res.redirect('/products');
         } else {
-            res.status(500).json({ message: "Failed to add category" });
+            res.status(500).send("Failed to add the product");
         }
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).send("An error occurred while adding the product");
     }
 };
 
-// Update an existing category
-exports.updateCategory = async (req, res) => {
+// Function to update an existing product
+exports.updateProduct = async (req, res) => {
     try {
-        const { categoryName, categoryId } = req.body; // Extract category details from the request body
-        console.log(categoryId, categoryName);
+        const { ProductId, ProductName, CategoryId, Price, Quantity } = req.body; // Extract product details
 
-        // Query to update the category name in the database
-        const updateCategoryQuery = `UPDATE categories SET CategoryName = '${categoryName}' WHERE CategoryId = ${categoryId}`;
-        const updateCategoryQueryRes = await runQuery(updateCategoryQuery);
-
-        // Check if the update was successful
-        if (updateCategoryQueryRes.affectedRows > 0) {
-            res.redirect('/categories'); // Redirect to the categories list
-        } else {
-            res.status(404).json({ message: "Category not found or not updated" });
+        // Validate the presence of required fields
+        if (!ProductId || !ProductName || !CategoryId || !Price || !Quantity) {
+            return res.status(400).send("ProductId, ProductName, CategoryId, Price, and Quantity are required");
         }
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+
+        // SQL query to update the product in the database
+        const updateProductQuery = `
+            UPDATE Products 
+            SET ProductName = '${ProductName}', 
+                CategoryId = ${CategoryId}, 
+                Price = ${Price}, 
+                Quantity = ${Quantity}
+            WHERE ProductId = ${ProductId};
+        `;
+        const result = await runQuery(updateProductQuery);
+
+        // Redirect to the products page if successful
+        if (result.affectedRows > 0) {
+            res.redirect('/products');
+        } else {
+            res.status(404).send("Product not found");
+        }
+    } catch (err) {
+        res.status(500).send("An error occurred while updating the product");
     }
 };
 
-// Delete a category
-exports.deleteCategory = async (req, res) => {
+// Function to delete a product
+exports.deleteProduct = async (req, res) => {
     try {
-        const { categoryId } = req.params; // Extract the category ID from the request parameters
+        const { id } = req.params; // Extract the product ID
 
-        // Validate if categoryId is provided
-        if (!categoryId) {
-            return res.status(400).json({ message: "Category ID is required" });
+        // Validate the presence of the product ID
+        if (!id) {
+            return res.status(400).send("ProductId is required");
         }
 
-        // Query to delete the category from the database
-        const deleteCategoryQuery = `DELETE FROM categories WHERE CategoryId = ${categoryId}`;
-        const deleteCategoryQueryRes = await runQuery(deleteCategoryQuery);
+        // SQL query to delete the product from the database
+        const deleteProductQuery = `DELETE FROM Products WHERE ProductId = ${id}`;
+        const result = await runQuery(deleteProductQuery);
 
-        // Check if the deletion was successful
-        if (deleteCategoryQueryRes.affectedRows > 0) {
-            res.redirect('/categories'); // Redirect to the categories list
+        // Redirect to the products page if successful
+        if (result.affectedRows > 0) {
+            res.redirect('/products');
         } else {
-            res.status(404).json({ message: "Category not found" });
+            res.status(404).send("Product not found");
         }
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).send("An error occurred while deleting the product");
     }
 };
